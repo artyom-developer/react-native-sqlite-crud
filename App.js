@@ -24,7 +24,7 @@ export default function App() {
   const [items, setItems] = useState([]);
   const [ showForm, setShowForm ] = useState(false);
   const [ formData, setFormData ] = useState({
-    name: "Juan", address: "Cll 100", phone: 319028484
+    id: 0, name: "Juan", address: "Cll 100", phone: 319028484
   });
 
   const [forceUpdate, forceUpdateId] = useForceUpdate();
@@ -44,16 +44,27 @@ export default function App() {
     );
   }
 
-  const addDatabase = () => {
+  const register = () => {
     
       db.transaction(
         (tx) => {
-          tx.executeSql("insert into items (name, address, phone) values ( ?, ?, ?)", [
-            formData.name, formData.address, formData.phone
-          ]);
+          if(formData.id==0){
+            tx.executeSql("insert into items (name, address, phone) values ( ?, ?, ?)", [
+              formData.name, formData.address, formData.phone
+            ]);
+          }
+          else{
+            console.log('Parametro form ',formData)
+            tx.executeSql(`update items set name = ?, address = ?, phone = ? where id = ?;`, [
+              formData.name, 
+              formData.address, 
+              formData.phone, 
+              formData.id
+            ]);
+          }
           reloadData(tx);
         },
-        null,
+        (error) => console.log('jr tx error', error),
         forceUpdate
       );
 
@@ -74,6 +85,16 @@ export default function App() {
 
   }
 
+  const edit = (data) => {
+    setFormData(data);
+    setShowForm(true);
+  } 
+
+  const add = () => {
+    setShowForm(true);                
+    setFormData({ ...formData, 'id': 0})
+  } 
+  
   return (
     <View style={styles.container}>
       <View style={{height:20}} />
@@ -109,11 +130,11 @@ export default function App() {
                 inputMode={"numeric"}
               /> 
 
-              <Button onPress={addDatabase} title="Save" color="#2E4053"  />
+              <Button onPress={register} title="Save" color="#2E4053"  />
             </View>
             :
             <View style={{ padding: 20 }}>
-              <Button onPress={()=>setShowForm(true)} title="New" color="#2E4053"  />
+              <Button onPress={()=>add()} title="New" color="#2E4053" />
             </View>
           }
           <ScrollView style={styles.listArea}>
@@ -121,10 +142,11 @@ export default function App() {
 
             <View style={styles.sectionContainer}>
               
-              {items.map(({ id, name }) => (
+              {items.map(({ id, name, address, phone }) => (
                 <TouchableOpacity
                   key={id}
-                  onPress={() =>  onClickDelete(id)}
+                  //onPress={() =>  onClickDelete(id)}
+                  onPress={() =>  edit({id, name, address, phone})}
                   style={{
                     backgroundColor:   "#1c9963" ,
                     borderColor: "#000",
